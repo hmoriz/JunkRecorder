@@ -6,7 +6,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="jp.ac.titech.itpro.hmoriz.junkrecorder.InputFragment">
+    tools:context=".junkfragments.InputFragment">
 
     <TextView
         android:id="@+id/section_inputlabel"
@@ -14,21 +14,26 @@
         android:layout_height="wrap_content" />
 
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="入力："
-        android:id="@+id/textInputView"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_below="@id/section_inputlabel" />
-
+        android:text="ここに説明文を表示"
+        android:id="@+id/inputtextView"
+        android:layout_below="@id/section_inputlabel"/>
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/editInputText"
-        android:layout_alignTop="@id/section_inputlabel"
-        android:layout_toRightOf="@id/textInputView"
-        android:hint="ここにメモしたいテキストを入力"/>
+        android:hint="ここにメモしたいテキストを入力"
+        android:layout_below="@id/inputtextView"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="入力："
+        android:id="@+id/textInputView"
+        android:paddingBottom="8dp"
+        android:layout_alignBottom="@id/editInputText"
+        android:layout_toStartOf="@id/editInputText"
+        android:layout_toLeftOf="@id/editInputText"/>
 
     <Button
         android:layout_width="wrap_content"
@@ -38,5 +43,45 @@
         android:layout_below="@id/editInputText"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="新規作成"
+        android:id="@+id/inputNewButton"
+        android:layout_alignTop="@+id/inputDecideButton"
+        android:layout_toRightOf="@+id/inputDecideButton"
+        android:layout_toEndOf="@+id/inputDecideButton" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="絵を入れる"
+        android:id="@+id/inputImagebutton"
+        android:layout_alignTop="@id/inputDecideButton"
+        android:layout_toRightOf="@id/inputNewButton"
+        android:layout_toEndOf="@id/inputNewButton" />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="場所登録"
+        android:id="@+id/inputLocationbutton"
+        android:layout_alignTop="@id/inputDecideButton"
+        android:layout_toRightOf="@id/inputImagebutton"
+        android:layout_toEndOf="@id/inputImagebutton" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text=""
+        android:id="@+id/outputTextView"
+        android:layout_below="@+id/inputDecideButton"
+        android:layout_toRightOf="@+id/textInputView"
+        android:layout_toEndOf="@+id/textInputView"
+        android:hint="ここにぼやきが表示されるはずです"
+        android:textSize="20sp"
+        android:background="#b2ebf2" />
+
+
 
 </RelativeLayout>

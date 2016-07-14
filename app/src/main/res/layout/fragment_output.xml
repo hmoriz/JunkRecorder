@@ -6,12 +6,24 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="jp.ac.titech.itpro.hmoriz.junkrecorder.OutputFragment">
+    tools:context=".junkfragments.OutputFragment">
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="編集"
+        android:id="@+id/edit_outputbutton"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
 
     <TextView
         android:id="@+id/output_textfield"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:hint="ここに出力結果が表示されるはず"/>
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:hint="ここに出力結果が表示されるはず"
+        android:layout_below="@id/edit_outputbutton"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
 
 </RelativeLayout>
