@@ -1,5 +1,6 @@
 package jp.ac.titech.itpro.hmoriz.junkrecorder.junkfragments;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -52,6 +53,7 @@ public class InputFragment extends JunkRecorderFragment {
 
     boolean mFromMap = false;
 
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // xmlからViewを生成、各viewを読み込む
@@ -59,8 +61,8 @@ public class InputFragment extends JunkRecorderFragment {
         ButterKnife.bind(InputFragment.this, view);
         initViews();
         inputNewButton.setOnClickListener(new OninputNewButtonClickListner());
-        if(filename != null) loadJunk(filename);
         mJunk = null;
+
         return view;
     }
 
@@ -85,6 +87,7 @@ public class InputFragment extends JunkRecorderFragment {
                 mainActivity.moveToMapFragment(filename);
             }
         });
+        if(filename != null) loadJunk(filename);
         super.onActivityCreated(savedInstanceState);
     }
 
@@ -93,17 +96,17 @@ public class InputFragment extends JunkRecorderFragment {
         inputEditText.setText("");
         inputTextView.setText("新しいぼやきの作成");
         outputView.setText("");
-        filename=null;
+        //filename=null;
     }
 
     // フラグメントの情報を引数のboyakiで読み込む
     @Override
     public void loadJunk(String filename) {
         super.loadJunk(filename);
-        class LoadTextBoyaki implements Runnable{
+        class LoadJunkImpl implements Runnable{
             Junk junk;
             String filename;
-            public LoadTextBoyaki(String filename){
+            public LoadJunkImpl(String filename){
                 if(filename != null) {
                     this.filename = filename;
                     this.junk = JunkDataStore.getInstance().readJunkJson(mainActivity, filename);
@@ -143,25 +146,28 @@ public class InputFragment extends JunkRecorderFragment {
                 }
             }
         }
-        class LoadThread implements Runnable{
-            String filename;
-            public LoadThread(String filename){
-                this.filename = filename;
-            }
+        class LoadThread extends AsyncTask<String, String, Void>{
             @Override
-            public void run() {
-                // 強引に、viewができるまでは処理は行わない
-                while(getView() == null){
+            protected Void doInBackground(String ...filename) {
+                while(mainActivity == null && getView() == null){
                     try {
-                        Thread.sleep(10);
+                        this.wait(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                mainActivity.runOnUiThread(new LoadTextBoyaki(filename));
+                publishProgress(filename);
+                return null;
+            }
+
+            @Override
+            protected void onProgressUpdate(String... values) {
+                mainActivity.runOnUiThread(new LoadJunkImpl(values[0]));
+                super.onProgressUpdate(values);
             }
         }
-        mainActivity.runOnUiThread(new LoadThread(filename));
+        AsyncTask<String, String, Void> task = new LoadThread();
+        task.execute(filename);
     }
 
     // とりあえずファイルに保存
@@ -201,7 +207,6 @@ public class InputFragment extends JunkRecorderFragment {
 
     public void setupLocation(LatLng latLng) {
         mFromMap = true;
-        inputLocationButton.setEnabled(false);
         if(mJunk != null){
             mJunk.setLocation(latLng);
         }

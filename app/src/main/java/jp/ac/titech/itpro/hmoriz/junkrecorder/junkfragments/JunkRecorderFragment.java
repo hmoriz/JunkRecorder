@@ -6,6 +6,7 @@ package jp.ac.titech.itpro.hmoriz.junkrecorder.junkfragments;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 
@@ -25,12 +26,23 @@ public abstract class JunkRecorderFragment extends Fragment {
     static String fileLocation = "test1.txt";
     protected String filename; // 現在フォーカスを当てているファイルの名前 使い方は子クラスにまかせる
     protected Junk mJunk; // 現在編集中のjunkのインスタンス
+    protected boolean mCalledOnAttach = false; // called onAttach
 
     protected MainActivity mainActivity;
+
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if(savedInstanceState != null){
+            filename = savedInstanceState.getString("filename", null);
+        }
+    }
 
     @Override
     public void onAttach(Context context) {
         Log.d("JunkRecorderFragment","onAttach:"+context.toString());
+        mCalledOnAttach = true;
         super.onAttach(context);
         if(context.getClass().equals(MainActivity.class)) mainActivity = (MainActivity)context;
     }
@@ -40,6 +52,13 @@ public abstract class JunkRecorderFragment extends Fragment {
 
     public String getFilename(){
         return filename;
+    }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("filename", filename);
     }
 
     public void loadJunk(String filename){

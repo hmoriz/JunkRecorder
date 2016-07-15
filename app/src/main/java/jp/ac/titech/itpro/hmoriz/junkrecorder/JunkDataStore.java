@@ -230,4 +230,14 @@ public class JunkDataStore {
         }
         initFilename_id(context, 0);
     }
+
+    // filenameのファイルを消す(filenameに拡張子を入れないと、同じ名前のすべての拡張子を消す)
+    public void deleteFile(Context context, String filename){
+        File dir = context.getFilesDir();
+        for(File file : dir.listFiles()){
+            if(file.getName().split("\\.")[0].equals(filename)){
+                file.delete();
+            }
+        }
+    }
 }

@@ -7,6 +7,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -93,6 +94,7 @@ public class InputMapFragment extends JunkRecorderFragment{
                 });
             }
         });
+        if(filename != null)loadJunk(filename);
         setUpLocationListenner();
         return view;
     }
@@ -102,68 +104,74 @@ public class InputMapFragment extends JunkRecorderFragment{
         super.onActivityCreated(savedInstanceState);
     }
 
+    // Inputから位置登録のボタンを押したとき等で、filenameが与えられたとき
+    // filenameのJunkが位置登録されていないならば、Googlemapの位置登録モードを始める
     @Override
     public void loadJunk(String filename) {
-        super.loadJunk(filename);
-    }
-
-    // filenameのJunkが位置登録されていないならば、Googlemapの位置登録モードを始める
-    public void startAddJunkMode(String filename){
-        mJunk = JunkDataStore.getInstance().readJunkJson(mainActivity, filename);
-        if(mJunk.getLocation()== null) {
-            mAddMode = true;
-            this.filename = filename;
-        }else{
-            // Map?->Input->Map
-            // リストに既に存在してるはず
-            tempPlace = markerHashMap.get(filename);
-            if(tempPlace == null) {
-                mapFragment.getMapAsync(new OnMapReadyCallback() {
-                    @Override
-                    public void onMapReady(GoogleMap googleMap) {
-                        CameraPosition position = CameraPosition.builder()
-                                .target(mJunk.getLocation())
-                                .zoom(15)
-                                .build();
-                        googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
+        class LoadJunkImpl implements Runnable {
+            String filename;
+            public LoadJunkImpl(String filename){
+                this.filename = filename;
+            }
+            @Override
+            public void run() {
+                mJunk = JunkDataStore.getInstance().readJunkJson(mainActivity, filename);
+                InputMapFragment.this.filename = filename;
+                if(mJunk.getLocation()== null) {
+                    // このJunkはまだ位置登録がされていないので、これから位置を登録する
+                    mAddMode = true;
+                }else{
+                    // すでに位置登録は済まされているJunk
+                    if(tempPlace != null){
+                        // MAPを長押しすることによりInputに入ってそこから戻った場合
+                        // 編集中のJunkというMarkerを取り除く
+                        tempPlace.remove();
+                        tempPlace = null;
                     }
-                });
-            } else {
-                tempPlace.showInfoWindow();
-                mapFragment.getMapAsync(new OnMapReadyCallback() {
-                    @Override
-                    public void onMapReady(GoogleMap googleMap) {
-                        CameraPosition position = CameraPosition.builder()
-                                .target(tempPlace.getPosition())
-                                .zoom(15)
-                                .build();
-                        googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
-                    }
-                });
+                    mapFragment.getMapAsync(new OnMapReadyCallback() {
+                        @Override
+                        public void onMapReady(GoogleMap googleMap) {
+                            CameraPosition position = CameraPosition.builder()
+                                    .target(mJunk.getLocation())
+                                    .zoom(15)
+                                    .build();
+                            googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
+                            Marker marker = googleMap.addMarker(new MarkerOptions()
+                                    .title(filename+"のJunk")
+                                    .position(mJunk.getLocation())
+                                    .snippet(mJunk.text)
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
+                            markerHashMap.put(filename, marker);
+                            filename = null;
+                        }
+                    });
+                }
             }
         }
-
-    }
-
-    // Map -> Input -> Mapで位置登録完了
-    public void registerJunk(final String filename){
-        this.filename = filename;
-        mJunk = JunkDataStore.getInstance().readJunkJson(mainActivity, filename);
-        if(tempPlace != null){
-            mapFragment.getMapAsync(new OnMapReadyCallback() {
-                @Override
-                public void onMapReady(GoogleMap googleMap) {
-                    LatLng latLng = tempPlace.getPosition();
-                    tempPlace.remove();
-                    tempPlace = googleMap.addMarker(new MarkerOptions()
-                    .position(latLng)
-                    .title(InputMapFragment.this.filename+"のつぶやき")
-                    .snippet(mJunk.text));
+        class LoadThread extends AsyncTask<String, String, Void> {
+            @Override
+            protected Void doInBackground(String ...filename) {
+                while(mainActivity == null && getView() == null){
+                    try {
+                        this.wait(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-            });
+                publishProgress(filename);
+                return null;
+            }
+
+            @Override
+            protected void onProgressUpdate(String... values) {
+                mainActivity.runOnUiThread(new LoadJunkImpl(values[0]));
+                super.onProgressUpdate(values);
+            }
         }
-        tempPlace = null;
+        AsyncTask<String, String, Void> task = new LoadThread();
+        task.execute(filename);
     }
+
 
     // GoogleMapが作られたタイミングで呼び出すようにする
     // このクラス内の実装で、GoogleMapの中に自分の書いた位置つきぼやきを読み込めるようにする
@@ -171,16 +179,18 @@ public class InputMapFragment extends JunkRecorderFragment{
     private class MapMarkerLoader implements OnMapReadyCallback {
         @Override
         public void onMapReady(GoogleMap googleMap) {
+            googleMap.clear();
             moveToCurrentLocation(googleMap, false);
             googleMap.setOnMapLongClickListener(new MyOnMapLongClickListener());
             googleMap.setOnMarkerClickListener(new MyOnMarkerClickListener());
+            googleMap.setOnInfoWindowClickListener(new MyOnMarkerInfoClickListener());
             HashMap<String, Junk> junkList = JunkDataStore.getInstance().readAllJunks(mainActivity);
             if(junkList != null){
                 for(String filename : junkList.keySet()){
                     Junk junk = junkList.get(filename);
                     if(junk.getLocation() != null){
                         Marker marker = googleMap.addMarker(new MarkerOptions()
-                                .title(filename+"のつぶやき")
+                                .title(filename+"のJunk")
                                 .position(junk.getLocation())
                                 .snippet(junk.text)
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
@@ -196,6 +206,7 @@ public class InputMapFragment extends JunkRecorderFragment{
         public void onMapClick(LatLng latLng) {
             if(selectedPlace != null){
                 mapFragment.getMapAsync(MyOnMapClickListener.this);
+                selectedPlace.hideInfoWindow();
                 selectedPlace = null;
             }
         }
@@ -219,6 +230,9 @@ public class InputMapFragment extends JunkRecorderFragment{
                 // DO NOTHING
             }else {
                 String filename = JunkDataStore.makeFilename(mainActivity);
+                Junk junk = new Junk();
+                junk.setLocation(latLng);
+                JunkDataStore.getInstance().writeJunk(mainActivity, junk, filename);
                 mainActivity.moveToInputFragment(filename, this.latLng);
             }
         }
@@ -229,7 +243,7 @@ public class InputMapFragment extends JunkRecorderFragment{
                 Junk junk = JunkDataStore.getInstance().readJunkJson(mainActivity, filename);
                 googleMap.addMarker(new MarkerOptions()
                         .position(latLng)
-                        .title(filename+"のつぶやき")
+                        .title(filename+"のJunk")
                         .snippet(junk.text)
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
                 mJunk.setLocation(latLng);
@@ -239,7 +253,7 @@ public class InputMapFragment extends JunkRecorderFragment{
             }else {
                 tempPlace = googleMap.addMarker(new MarkerOptions()
                         .position(latLng)
-                        .title("新しいつぶやき(編集中)")
+                        .title("新しいJunk(編集中)")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
             }
         }
@@ -249,14 +263,24 @@ public class InputMapFragment extends JunkRecorderFragment{
     private class MyOnMarkerClickListener implements GoogleMap.OnMarkerClickListener{
         @Override
         public boolean onMarkerClick(Marker marker) {
+            if(marker == null || marker.equals(myPlace) || marker.equals(tempPlace))return false;
             // マーカーからぼやきをよびだす
             if(marker.equals(selectedPlace)) {
-                String filename = marker.getTitle().replace("のつぶやき", "");
+                String filename = marker.getTitle().replace("のJunk", "");
                 mainActivity.moveToInputFragment(filename);
             }else{
                 selectedPlace = marker;
             }
             return false;
+        }
+    }
+
+    // マーカーの情報ウィンドウが押されたときのイベント(詳細表示)
+    private class MyOnMarkerInfoClickListener implements GoogleMap.OnInfoWindowClickListener{
+        @Override
+        public void onInfoWindowClick(Marker marker) {
+            String filename = marker.getTitle().replace("のJunk", "");
+            mainActivity.moveToInputFragment(filename);
         }
     }
 

@@ -78,7 +78,7 @@
         android:layout_below="@+id/inputDecideButton"
         android:layout_toRightOf="@+id/textInputView"
         android:layout_toEndOf="@+id/textInputView"
-        android:hint="ここにぼやきが表示されるはずです"
+        android:hint="ここにJunkが表示されるはずです"
         android:textSize="20sp"
         android:background="#b2ebf2" />
 

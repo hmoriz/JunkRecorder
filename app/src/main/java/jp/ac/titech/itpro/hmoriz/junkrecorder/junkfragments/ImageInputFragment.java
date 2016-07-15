@@ -1,6 +1,7 @@
 package jp.ac.titech.itpro.hmoriz.junkrecorder.junkfragments;
 
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -49,7 +50,6 @@ public class ImageInputFragment extends JunkRecorderFragment {
         // xmlからViewを生成、各viewを読み込む
         View view = inflater.inflate(R.layout.fragment_imageinput, container, false);
         ButterKnife.bind(ImageInputFragment.this, view);
-
         //mJunk = new Junk();
         return view;
     }
@@ -65,6 +65,7 @@ public class ImageInputFragment extends JunkRecorderFragment {
                 mainActivity.closeThisSection();
             }
         });
+        if(filename != null)loadJunk(filename);
         super.onActivityCreated(savedInstanceState);
     }
 
@@ -74,11 +75,11 @@ public class ImageInputFragment extends JunkRecorderFragment {
     @Override
     public void loadJunk(@Nullable String filename){
         super.loadJunk(filename);
-        class LoadImageBoyaki implements Runnable{
+        class LoadJunkImpl implements Runnable{
             Bitmap bitmap;
             Junk junk;
             String filename;
-            public LoadImageBoyaki(String filename){
+            public LoadJunkImpl(String filename){
                 if(filename != null) {
                     this.filename = filename;
                     this.junk = JunkDataStore.getInstance().readJunkJson(mainActivity, filename);
@@ -104,25 +105,28 @@ public class ImageInputFragment extends JunkRecorderFragment {
                 }
             }
         }
-        class LoadThread implements Runnable{
-            String filename;
-            public LoadThread(String filename){
-                this.filename = filename;
-            }
+        class LoadThread extends AsyncTask<String, String, Void> {
             @Override
-            public void run() {
-                // 強引に、viewができるまでは処理は行わない
-                while(getView() == null){
+            protected Void doInBackground(String ...filename) {
+                while(mainActivity == null && getView() == null){
                     try {
-                        Thread.sleep(10);
+                        this.wait(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                mainActivity.runOnUiThread(new LoadImageBoyaki(filename));
+                publishProgress(filename);
+                return null;
+            }
+
+            @Override
+            protected void onProgressUpdate(String... values) {
+                mainActivity.runOnUiThread(new LoadJunkImpl(values[0]));
+                super.onProgressUpdate(values);
             }
         }
-        mainActivity.runOnUiThread(new LoadThread(filename));
+        AsyncTask<String, String, Void> task = new LoadThread();
+        task.execute(filename);
 
     }
 

@@ -154,7 +154,6 @@ public class MainActivity extends AppCompatActivity {
         mAppBarLayout.setExpanded(false, true);
         JunkRecorderFragment junkRecorderFragment = mSectionsPagerAdapter.findJunkRecorderFragment(ImageInputFragment.class);
         if(junkRecorderFragment == null){
-            junkRecorderFragment = JunkRecorderFragment.newInstance(JunkRecorderFragment.FRAGMENT_INPUT_IMAGE);
             mSectionsPagerAdapter.add(SectionsPagerAdapter.TAG_IMAGE);
         }
         int position = mSectionsPagerAdapter.getPosition(SectionsPagerAdapter.TAG_IMAGE);
@@ -186,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
             mSectionsPagerAdapter.add(SectionsPagerAdapter.TAG_MAP);
         }
         int position = mSectionsPagerAdapter.getPosition(SectionsPagerAdapter.TAG_MAP);
-        ((InputMapFragment)mSectionsPagerAdapter.getFragment(SectionsPagerAdapter.TAG_MAP, position)).startAddJunkMode(filename);
+        ((InputMapFragment)mSectionsPagerAdapter.getFragment(SectionsPagerAdapter.TAG_MAP, position)).loadJunk(filename);
         mViewPager.setCurrentItem(position, true);
     }
 
